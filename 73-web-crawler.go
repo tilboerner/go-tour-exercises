@@ -33,29 +33,25 @@ func Crawl(url string, depth int, fetcher Fetcher) {
     }
 }
 
-// maps url to fetch status: true if fetch was successful
-var urlstore = make(map [string]bool)
-// (Only the keys have real purpose, but the values might as well be used
-// to simulate some meaningful action.)
+// seen keeps tracks of urls encountered so far
+var seen = make(map [string]bool)
 
 // slurp uses Fetcher `f` to get and process content from the given `url`.
 // It sends embedded links to `links` and signals once to `done` when finished.
 // If `url` has been processed already or if `depth` is <= 0, slurp doesn't do
 // anything and finishes immediately.
 func slurp(url string, depth int, f Fetcher, links chan link, done chan int) {
-    _, known := urlstore[url]
-    if known || depth <= 0 {
+    if depth <= 0 || seen[url] {
         done <- 1
         return
     }
-    urlstore[url] = false
+    seen[url] = true
     body, urls, err := f.Fetch(url)
     if err != nil {
         fmt.Println(err)
         done <- 1
         return
     }
-    urlstore[url] = true
     fmt.Printf("found: %s %q\n", url, body)
     for _, u := range urls {
         links <- link{u, depth - 1}
