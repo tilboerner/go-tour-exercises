@@ -41,23 +41,20 @@ var seen = make(map [string]bool)
 // If `url` has been processed already or if `depth` is <= 0, slurp doesn't do
 // anything and finishes immediately.
 func slurp(url string, depth int, f Fetcher, links chan link, done chan int) {
+    defer func() { done <- 1 }()
     if depth <= 0 || seen[url] {
-        done <- 1
         return
     }
     seen[url] = true
     body, urls, err := f.Fetch(url)
     if err != nil {
         fmt.Println(err)
-        done <- 1
         return
     }
     fmt.Printf("found: %s %q\n", url, body)
     for _, u := range urls {
         links <- link{u, depth - 1}
     }
-    done <- 1   // of course, we might never get this done. looks like a case
-                // for try-finally to me, but not sure how Go handles this. ^^
 }
 
 func main() {
